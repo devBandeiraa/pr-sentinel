@@ -18,7 +18,7 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 - Padrões de código: Spotless (google-java-format), JaCoCo (mínimo 80% em `domain`/`application`), ArchUnit para isolar a camada `domain`.
 - Pacotes `domain`, `application` e `infrastructure` em cada serviço, com as regras de camada validadas por `ArchitectureTest`.
 - CI roda `spotless:check`, testes, ArchUnit e o gate de cobertura.
-- Documentação viva: `CLAUDE.md` e ADRs 001–004.
+- Documentação viva: `CLAUDE.md` e ADRs 001–004 em `docs/adr/`.
 - Subagentes e skills do Claude Code para o fluxo de desenvolvimento das próximas fases.
 - Templates de PR, issues e configuração do Dependabot.
 
