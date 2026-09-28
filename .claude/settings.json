@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.env)",
+      "Read(secrets/**)",
+      "Read(**/*.pem)",
+      "Write(.env)",
+      "Write(secrets/**)",
+      "Write(**/*.pem)",
+      "Edit(.env)",
+      "Edit(secrets/**)",
+      "Edit(**/*.pem)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/spotless-apply.sh\"",
+            "timeout": 120,
+            "statusMessage": "Formatando com Spotless"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-secrets.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
