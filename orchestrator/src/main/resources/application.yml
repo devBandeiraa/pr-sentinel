@@ -1,0 +1,32 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: orchestrator
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        default-requeue-rejected: false
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:prsentinel}
+    username: ${POSTGRES_USER:prsentinel}
+    password: ${POSTGRES_PASSWORD:prsentinel}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+orchestrator:
+  agent-timeout: 5m
+  timeout-check-interval: 30s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus

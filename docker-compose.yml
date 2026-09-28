@@ -1,0 +1,135 @@
+x-rabbit-env: &rabbit-env
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+
+x-agent: &agent
+  build:
+    context: .
+    args:
+      MODULE: review-agent
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"   # painel: http://localhost:15672
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 5
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: prsentinel
+      POSTGRES_USER: ${POSTGRES_USER:-prsentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prsentinel}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prsentinel}"]
+      interval: 10s
+      retries: 5
+
+  webhook-gateway:
+    build:
+      context: .
+      args:
+        MODULE: webhook-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *rabbit-env
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  diff-fetcher:
+    build:
+      context: .
+      args:
+        MODULE: diff-fetcher
+    environment:
+      <<: *rabbit-env
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github-app.pem
+    secrets:
+      - github-app.pem
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  agent-security:
+    <<: *agent
+    environment:
+      <<: *rabbit-env
+      AGENT_TYPE: SECURITY
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5}
+
+  agent-performance:
+    <<: *agent
+    environment:
+      <<: *rabbit-env
+      AGENT_TYPE: PERFORMANCE
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5}
+
+  agent-standards:
+    <<: *agent
+    environment:
+      <<: *rabbit-env
+      AGENT_TYPE: STANDARDS
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5}
+
+  orchestrator:
+    build:
+      context: .
+      args:
+        MODULE: orchestrator
+    environment:
+      <<: *rabbit-env
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-prsentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prsentinel}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  github-publisher:
+    build:
+      context: .
+      args:
+        MODULE: github-publisher
+    environment:
+      <<: *rabbit-env
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github-app.pem
+    secrets:
+      - github-app.pem
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+secrets:
+  github-app.pem:
+    file: ${GITHUB_APP_PRIVATE_KEY_FILE:-./secrets/github-app.pem}
+
+volumes:
+  pgdata:
