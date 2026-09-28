@@ -7,6 +7,11 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `mvnw` e os hooks em `.claude/hooks/` estavam versionados sem bit de execução, o que fazia o CI
+  falhar com `Permission denied` no Linux.
+
 ## [0.1.0] - 2026-09-28
 
 ### Added
