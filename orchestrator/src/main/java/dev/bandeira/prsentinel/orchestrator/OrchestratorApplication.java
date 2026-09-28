@@ -12,22 +12,22 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 public class OrchestratorApplication {
 
-    static final String REVIEWS_SERVICE = "orchestrator-reviews";
-    static final String RESULTS_SERVICE = "orchestrator-results";
+  static final String REVIEWS_SERVICE = "orchestrator-reviews";
+  static final String RESULTS_SERVICE = "orchestrator-results";
 
-    public static void main(String[] args) {
-        SpringApplication.run(OrchestratorApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(OrchestratorApplication.class, args);
+  }
 
-    /** Escuta o início da review para registrar o estado PENDING. */
-    @Bean
-    Declarables reviewRequestedQueue() {
-        return QueueDeclarations.consumerQueue(REVIEWS_SERVICE, Topology.RK_REVIEW_REQUESTED);
-    }
+  /** Escuta o início da review para registrar o estado PENDING. */
+  @Bean
+  Declarables reviewRequestedQueue() {
+    return QueueDeclarations.consumerQueue(REVIEWS_SERVICE, Topology.RK_REVIEW_REQUESTED);
+  }
 
-    /** Escuta os resultados de cada agente. */
-    @Bean
-    Declarables agentCompletedQueue() {
-        return QueueDeclarations.consumerQueue(RESULTS_SERVICE, Topology.RK_AGENT_COMPLETED);
-    }
+  /** Escuta os resultados de cada agente. */
+  @Bean
+  Declarables agentCompletedQueue() {
+    return QueueDeclarations.consumerQueue(RESULTS_SERVICE, Topology.RK_AGENT_COMPLETED);
+  }
 }

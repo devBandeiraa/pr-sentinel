@@ -5,9 +5,4 @@ import java.util.UUID;
 
 /** Publicado pelo webhook-gateway quando um PR é aberto ou atualizado. */
 public record ReviewRequestedEvent(
-        UUID reviewId,
-        String deliveryId,
-        PullRequestRef pullRequest,
-        Instant requestedAt
-) {
-}
+    UUID reviewId, String deliveryId, PullRequestRef pullRequest, Instant requestedAt) {}

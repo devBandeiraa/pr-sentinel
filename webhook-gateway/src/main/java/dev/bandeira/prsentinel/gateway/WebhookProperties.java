@@ -6,5 +6,4 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "github.webhook")
-public record WebhookProperties(@NotBlank String secret) {
-}
+public record WebhookProperties(@NotBlank String secret) {}

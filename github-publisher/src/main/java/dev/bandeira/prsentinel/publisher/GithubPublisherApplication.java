@@ -10,14 +10,14 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class GithubPublisherApplication {
 
-    static final String SERVICE = "github-publisher";
+  static final String SERVICE = "github-publisher";
 
-    public static void main(String[] args) {
-        SpringApplication.run(GithubPublisherApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(GithubPublisherApplication.class, args);
+  }
 
-    @Bean
-    Declarables publisherQueue() {
-        return QueueDeclarations.consumerQueue(SERVICE, Topology.RK_REVIEW_READY);
-    }
+  @Bean
+  Declarables publisherQueue() {
+    return QueueDeclarations.consumerQueue(SERVICE, Topology.RK_REVIEW_READY);
+  }
 }

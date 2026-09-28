@@ -9,17 +9,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReviewRequestedListener {
 
-    private static final Logger log = LoggerFactory.getLogger(ReviewRequestedListener.class);
+  private static final Logger log = LoggerFactory.getLogger(ReviewRequestedListener.class);
 
-    @RabbitListener(queues = "pr-sentinel." + DiffFetcherApplication.SERVICE)
-    public void onReviewRequested(ReviewRequestedEvent event) {
-        log.info("Buscando diff review={} pr={}", event.reviewId(), event.pullRequest().fullName());
+  @RabbitListener(queues = "pr-sentinel." + DiffFetcherApplication.SERVICE)
+  public void onReviewRequested(ReviewRequestedEvent event) {
+    log.info("Buscando diff review={} pr={}", event.reviewId(), event.pullRequest().fullName());
 
-        // TODO fase 3:
-        //  1. Obter installation token do GitHub App (JWT assinado com a chave privada)
-        //  2. GET /repos/{owner}/{repo}/pulls/{number}/files (paginado)
-        //  3. Ignorar lockfiles, arquivos gerados e binários
-        //  4. Dividir patches grandes em chunks (limite configurável)
-        //  5. Publicar DiffReadyEvent em Topology.RK_DIFF_READY
-    }
+    // TODO fase 3:
+    //  1. Obter installation token do GitHub App (JWT assinado com a chave privada)
+    //  2. GET /repos/{owner}/{repo}/pulls/{number}/files (paginado)
+    //  3. Ignorar lockfiles, arquivos gerados e binários
+    //  4. Dividir patches grandes em chunks (limite configurável)
+    //  5. Publicar DiffReadyEvent em Topology.RK_DIFF_READY
+  }
 }

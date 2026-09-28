@@ -7,16 +7,13 @@ import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "agent")
-public record AgentProperties(
-        @NotNull AgentType type,
-        double minConfidence
-) {
-    /** Nome do serviço usado para a fila: review-agent-security, etc. */
-    public String serviceName() {
-        return "review-agent-" + type.name().toLowerCase();
-    }
+public record AgentProperties(@NotNull AgentType type, double minConfidence) {
+  /** Nome do serviço usado para a fila: review-agent-security, etc. */
+  public String serviceName() {
+    return "review-agent-" + type.name().toLowerCase();
+  }
 
-    public String promptResource() {
-        return "classpath:prompts/" + type.name().toLowerCase() + ".st";
-    }
+  public String promptResource() {
+    return "classpath:prompts/" + type.name().toLowerCase() + ".st";
+  }
 }

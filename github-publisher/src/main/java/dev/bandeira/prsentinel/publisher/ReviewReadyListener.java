@@ -9,16 +9,20 @@ import org.springframework.stereotype.Component;
 @Component
 public class ReviewReadyListener {
 
-    private static final Logger log = LoggerFactory.getLogger(ReviewReadyListener.class);
+  private static final Logger log = LoggerFactory.getLogger(ReviewReadyListener.class);
 
-    @RabbitListener(queues = "pr-sentinel." + GithubPublisherApplication.SERVICE)
-    public void onReviewReady(ReviewReadyEvent event) {
-        log.info("Publicando review={} pr={} veredito={} achados={}",
-                event.reviewId(), event.pullRequest().fullName(), event.verdict(), event.findings().size());
+  @RabbitListener(queues = "pr-sentinel." + GithubPublisherApplication.SERVICE)
+  public void onReviewReady(ReviewReadyEvent event) {
+    log.info(
+        "Publicando review={} pr={} veredito={} achados={}",
+        event.reviewId(),
+        event.pullRequest().fullName(),
+        event.verdict(),
+        event.findings().size());
 
-        // TODO fase 6:
-        //  1. Montar o comentário-resumo em Markdown (veredito, tabela por agente/severidade, top 5)
-        //  2. POST /repos/{owner}/{repo}/pulls/{number}/reviews com os comentários inline
-        //  3. Respeitar rate limit (headers X-RateLimit-Remaining / Retry-After)
-    }
+    // TODO fase 6:
+    //  1. Montar o comentário-resumo em Markdown (veredito, tabela por agente/severidade, top 5)
+    //  2. POST /repos/{owner}/{repo}/pulls/{number}/reviews com os comentários inline
+    //  3. Respeitar rate limit (headers X-RateLimit-Remaining / Retry-After)
+  }
 }

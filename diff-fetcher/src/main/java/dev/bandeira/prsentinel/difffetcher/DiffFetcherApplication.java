@@ -10,14 +10,14 @@ import org.springframework.context.annotation.Bean;
 @SpringBootApplication
 public class DiffFetcherApplication {
 
-    static final String SERVICE = "diff-fetcher";
+  static final String SERVICE = "diff-fetcher";
 
-    public static void main(String[] args) {
-        SpringApplication.run(DiffFetcherApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(DiffFetcherApplication.class, args);
+  }
 
-    @Bean
-    Declarables diffFetcherQueue() {
-        return QueueDeclarations.consumerQueue(SERVICE, Topology.RK_REVIEW_REQUESTED);
-    }
+  @Bean
+  Declarables diffFetcherQueue() {
+    return QueueDeclarations.consumerQueue(SERVICE, Topology.RK_REVIEW_REQUESTED);
+  }
 }

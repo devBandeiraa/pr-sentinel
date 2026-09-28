@@ -17,5 +17,17 @@ jobs:
           java-version: 21
           cache: maven
 
-      - name: Build e testes
-        run: mvn -B verify
+      - name: Formatação (Spotless)
+        run: ./mvnw -B spotless:check
+
+      # verify roda testes unitários, ArchUnit, Testcontainers e o gate do JaCoCo
+      - name: Build, testes e cobertura
+        run: ./mvnw -B verify
+
+      - name: Publica relatórios de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-reports
+          path: "**/target/site/jacoco/"
+          if-no-files-found: ignore
