@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+*.jar binary
+*.pem binary
+*.png binary
+*.jpg binary
