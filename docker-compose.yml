@@ -49,8 +49,13 @@ services:
     environment:
       <<: *rabbit-env
       GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-prsentinel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prsentinel}
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     restart: unless-stopped
 

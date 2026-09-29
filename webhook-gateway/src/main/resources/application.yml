@@ -9,10 +9,32 @@ spring:
     port: 5672
     username: ${RABBITMQ_USER:guest}
     password: ${RABBITMQ_PASSWORD:guest}
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:prsentinel}
+    username: ${POSTGRES_USER:prsentinel}
+    password: ${POSTGRES_PASSWORD:prsentinel}
+    hikari:
+      # Pool pequeno e timeout curto: o handler do webhook precisa responder
+      # dentro do prazo do GitHub, e é melhor falhar rápido (e ser reentregue)
+      # do que segurar a requisição esperando conexão.
+      maximum-pool-size: 5
+      connection-timeout: 3000
+  flyway:
+    # Schema próprio: o orchestrator usa o mesmo banco no public, e dois
+    # históricos do Flyway no mesmo schema quebrariam o boot por checksum
+    # divergente (ADR-005).
+    schemas: gateway
+    default-schema: gateway
+    create-schemas: true
 
 github:
   webhook:
     secret: ${GITHUB_WEBHOOK_SECRET}
+
+gateway:
+  idempotency:
+    retention: 30d
+    purge-interval: 24h
 
 management:
   endpoints:
