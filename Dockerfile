@@ -1,7 +1,7 @@
 # Dockerfile único para todos os serviços. O módulo é escolhido via build arg:
 #   docker build --build-arg MODULE=webhook-gateway -t pr-sentinel/webhook-gateway .
 
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3-eclipse-temurin-26 AS build
 ARG MODULE
 WORKDIR /workspace
 
