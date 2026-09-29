@@ -8,6 +8,11 @@ updates:
       prefix: "chore"
       include: scope
     open-pull-requests-limit: 10
+    ignore:
+      # Subir o major do Spring Boot é trabalho próprio, com ADR: o BOM do Boot 4
+      # deixou de gerenciar as versões do Testcontainers e quebra o orchestrator.
+      - dependency-name: "org.springframework.boot:spring-boot-starter-parent"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -16,6 +21,14 @@ updates:
     commit-message:
       prefix: "chore"
       include: scope
+    ignore:
+      # O projeto é Java 21 (LTS) no POM e no CI. Trocar o Java das imagens é
+      # decisão de projeto, não bump automático — senão o container roda numa
+      # versão que o CI nunca testou.
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "maven"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
