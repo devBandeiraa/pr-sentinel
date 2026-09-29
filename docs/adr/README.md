@@ -10,5 +10,6 @@ supersede a anterior.
 | [002](002-review-agent-como-tres-containers.md) | Um módulo `review-agent` executado como três containers | Aceita |
 | [003](003-review-parcial-em-timeout-de-agente.md) | Review parcial em caso de timeout de agente | Aceita |
 | [004](004-saida-estruturada-do-llm-com-limiar-de-confianca.md) | Saída estruturada do LLM com limiar de confiança | Aceita |
+| [005](005-idempotencia-do-webhook-por-delivery-id-no-postgres.md) | Idempotência do webhook por delivery id em tabela no Postgres | Aceita |
 
 Para criar a próxima, use a skill `write-adr`.
