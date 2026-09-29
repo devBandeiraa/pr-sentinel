@@ -7,6 +7,11 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Changed
+
+- Dependabot passa a ignorar majors do Spring Boot e do Java nas imagens Docker; essas subidas são
+  decisão de projeto, com ADR, e não bump automático.
+
 ### Fixed
 
 - `mvnw` e os hooks em `.claude/hooks/` estavam versionados sem bit de execução, o que fazia o CI
