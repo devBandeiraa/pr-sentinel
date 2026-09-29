@@ -25,10 +25,13 @@ updates:
       # O projeto é Java 21 (LTS) no POM e no CI. Trocar o Java das imagens é
       # decisão de projeto, não bump automático — senão o container roda numa
       # versão que o CI nunca testou.
+      #
+      # O ignore é total, e não só de major, porque a versão do Java vive no
+      # sufixo da tag: o Dependabot lê "3.9-eclipse-temurin-21" ->
+      # "3-eclipse-temurin-26" como mudança do Maven (3.9 -> 3), então o Java
+      # passa de carona por um filtro de semver-major.
       - dependency-name: "eclipse-temurin"
-        update-types: ["version-update:semver-major"]
       - dependency-name: "maven"
-        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
