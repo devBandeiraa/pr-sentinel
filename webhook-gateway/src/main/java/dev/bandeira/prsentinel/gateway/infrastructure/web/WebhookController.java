@@ -1,41 +1,44 @@
 package dev.bandeira.prsentinel.gateway.infrastructure.web;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.bandeira.prsentinel.common.event.PullRequestRef;
-import dev.bandeira.prsentinel.common.event.ReviewRequestedEvent;
-import dev.bandeira.prsentinel.common.messaging.Topology;
+import dev.bandeira.prsentinel.gateway.application.DeliveryOutcome;
+import dev.bandeira.prsentinel.gateway.application.RequestReviewUseCase;
+import dev.bandeira.prsentinel.gateway.domain.WebhookDelivery;
 import dev.bandeira.prsentinel.gateway.infrastructure.security.SignatureVerifier;
 import java.io.IOException;
-import java.time.Instant;
-import java.util.Set;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Adaptador HTTP do webhook do GitHub.
+ *
+ * <p>Só faz trabalho de transporte: verifica a assinatura, traduz o payload e mapeia o resultado do
+ * caso de uso em status. A decisão de publicar ou não é da {@code application}.
+ *
+ * <p>Todo caminho aceito responde {@code 202}, inclusive duplicata e ação ignorada. Responder
+ * não-2xx faria o GitHub reentregar e marcar a entrega como falha permanente no painel do App
+ * (ADR-005). A distinção entre os casos fica no log.
+ */
 @RestController
 public class WebhookController {
 
   private static final Logger log = LoggerFactory.getLogger(WebhookController.class);
-  private static final Set<String> HANDLED_ACTIONS = Set.of("opened", "synchronize", "reopened");
 
   private final SignatureVerifier signatureVerifier;
-  private final RabbitTemplate rabbitTemplate;
-  private final ObjectMapper objectMapper;
+  private final WebhookPayloadReader payloadReader;
+  private final RequestReviewUseCase requestReview;
 
   public WebhookController(
       SignatureVerifier signatureVerifier,
-      RabbitTemplate rabbitTemplate,
-      ObjectMapper objectMapper) {
+      WebhookPayloadReader payloadReader,
+      RequestReviewUseCase requestReview) {
     this.signatureVerifier = signatureVerifier;
-    this.rabbitTemplate = rabbitTemplate;
-    this.objectMapper = objectMapper;
+    this.payloadReader = payloadReader;
+    this.requestReview = requestReview;
   }
 
   @PostMapping("/webhooks/github")
@@ -46,6 +49,7 @@ public class WebhookController {
       @RequestBody byte[] payload)
       throws IOException {
 
+    // A assinatura é conferida sobre o corpo cru, antes de qualquer parse.
     if (!signatureVerifier.isValid(payload, signature)) {
       log.warn("Assinatura inválida delivery={}", deliveryId);
       return ResponseEntity.status(401).build();
@@ -55,38 +59,26 @@ public class WebhookController {
       return ResponseEntity.accepted().build();
     }
 
-    JsonNode body = objectMapper.readTree(payload);
-    String action = body.path("action").asText();
-    if (!HANDLED_ACTIONS.contains(action)) {
-      return ResponseEntity.accepted().build();
+    WebhookDelivery delivery;
+    try {
+      delivery = payloadReader.read(payload, deliveryId);
+    } catch (IllegalArgumentException e) {
+      // deliveryId ausente, vazio ou longo demais: erro do cliente, não vale reentregar.
+      log.warn("Delivery id inválido: {}", e.getMessage());
+      return ResponseEntity.badRequest().build();
     }
 
-    // TODO fase 2: idempotência — ignorar deliveryId já processado (Redis ou tabela no Postgres)
+    DeliveryOutcome outcome = requestReview.handle(delivery);
 
-    JsonNode pr = body.path("pull_request");
-    PullRequestRef ref =
-        new PullRequestRef(
-            body.path("installation").path("id").asLong(),
-            body.path("repository").path("owner").path("login").asText(),
-            body.path("repository").path("name").asText(),
-            pr.path("number").asInt(),
-            pr.path("head").path("sha").asText());
+    switch (outcome) {
+      case PUBLISHED ->
+          log.info(
+              "Review solicitada delivery={} pr={}", deliveryId, delivery.pullRequest().fullName());
+      case DUPLICATE -> log.info("Entrega duplicada ignorada delivery={}", deliveryId);
+      case IGNORED_ACTION ->
+          log.debug("Ação sem review delivery={} action={}", deliveryId, delivery.action());
+    }
 
-    ReviewRequestedEvent requested =
-        new ReviewRequestedEvent(UUID.randomUUID(), deliveryId, ref, Instant.now());
-
-    rabbitTemplate.convertAndSend(
-        Topology.EXCHANGE,
-        Topology.RK_REVIEW_REQUESTED,
-        requested,
-        message -> {
-          message
-              .getMessageProperties()
-              .setHeader(Topology.CORRELATION_HEADER, requested.reviewId().toString());
-          return message;
-        });
-
-    log.info("Review solicitada review={} pr={}", requested.reviewId(), ref.fullName());
     return ResponseEntity.accepted().build();
   }
 }
