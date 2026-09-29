@@ -1,4 +1,4 @@
-package dev.bandeira.prsentinel.gateway;
+package dev.bandeira.prsentinel.gateway.infrastructure.config;
 
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;

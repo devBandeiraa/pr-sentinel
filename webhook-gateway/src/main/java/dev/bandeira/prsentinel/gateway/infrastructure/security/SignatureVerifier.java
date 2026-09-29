@@ -1,5 +1,6 @@
-package dev.bandeira.prsentinel.gateway;
+package dev.bandeira.prsentinel.gateway.infrastructure.security;
 
+import dev.bandeira.prsentinel.gateway.infrastructure.config.WebhookProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;

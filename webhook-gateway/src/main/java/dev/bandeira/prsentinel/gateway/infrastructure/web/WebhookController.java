@@ -1,10 +1,11 @@
-package dev.bandeira.prsentinel.gateway;
+package dev.bandeira.prsentinel.gateway.infrastructure.web;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.bandeira.prsentinel.common.event.PullRequestRef;
 import dev.bandeira.prsentinel.common.event.ReviewRequestedEvent;
 import dev.bandeira.prsentinel.common.messaging.Topology;
+import dev.bandeira.prsentinel.gateway.infrastructure.security.SignatureVerifier;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Set;
