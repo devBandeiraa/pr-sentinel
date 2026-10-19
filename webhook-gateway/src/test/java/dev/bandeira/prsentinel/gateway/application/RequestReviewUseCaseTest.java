@@ -90,4 +90,35 @@ class RequestReviewUseCaseTest {
     // o rollback transacional descrito na ADR-005.
     assertThat(processedDeliveries.registerCalls()).hasSize(1);
   }
+
+  @Test
+  void payloadIncompletoNaoRegistraNemPublicaEDevolveInvalidPayload() {
+    WebhookDelivery delivery =
+        new WebhookDelivery(
+            new DeliveryId("delivery-incomplete"),
+            PullRequestAction.OPENED,
+            new PullRequestRef(0L, "", "", 0, ""));
+
+    DeliveryOutcome outcome = useCase.handle(delivery);
+
+    assertThat(outcome).isEqualTo(DeliveryOutcome.INVALID_PAYLOAD);
+    assertThat(processedDeliveries.registerCalls()).isEmpty();
+    assertThat(publisher.published()).isEmpty();
+  }
+
+  @Test
+  void acaoIgnoradaVemAntesDaChecagemDePayload() {
+    // A ordem é deliberada: um payload incompleto de uma ação que não dispara review precisa
+    // terminar em 202, não em 400. Invertido, o gateway recusaria entregas legítimas de
+    // 'closed' e o GitHub reentregaria para sempre.
+    WebhookDelivery delivery =
+        new WebhookDelivery(
+            new DeliveryId("delivery-closed-incomplete"),
+            PullRequestAction.OTHER,
+            new PullRequestRef(0L, "", "", 0, ""));
+
+    DeliveryOutcome outcome = useCase.handle(delivery);
+
+    assertThat(outcome).isEqualTo(DeliveryOutcome.IGNORED_ACTION);
+  }
 }

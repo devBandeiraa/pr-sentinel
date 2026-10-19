@@ -39,6 +39,13 @@ public class RequestReviewUseCase {
       return DeliveryOutcome.IGNORED_ACTION;
     }
 
+    // Depois do filtro de ação, nunca antes: um payload incompleto de uma ação que não dispara
+    // review é para ser ignorado em silêncio, não recusado — recusar faria o GitHub reentregar
+    // indefinidamente uma entrega que nunca ia gerar review de todo jeito.
+    if (!delivery.hasCompletePullRequest()) {
+      return DeliveryOutcome.INVALID_PAYLOAD;
+    }
+
     UUID reviewId = UUID.randomUUID();
     boolean reserved =
         processedDeliveries.register(delivery.deliveryId(), reviewId, delivery.action());
