@@ -20,7 +20,11 @@ spring:
 
 github:
   app-id: ${GITHUB_APP_ID}
+  # Chave em PKCS#8, montada como secret do Docker. O arquivo que o GitHub entrega vem em
+  # PKCS#1 e precisa ser convertido uma vez — ver README e ADR-006.
   private-key-path: ${GITHUB_APP_PRIVATE_KEY_PATH:/run/secrets/github-app.pem}
+  # Parametrizado para o GitHub Enterprise e para os testes.
+  api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
 
 diff:
   max-chunk-chars: 12000
