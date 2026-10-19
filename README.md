@@ -28,7 +28,7 @@ Todos os eventos passam por um topic exchange no RabbitMQ (`pr-sentinel.events`)
 | Módulo | Responsabilidade |
 |---|---|
 | `common` | Contratos de eventos (records) e topologia de mensageria |
-| `webhook-gateway` | Valida assinatura HMAC do GitHub e publica `pr.review.requested` |
+| `webhook-gateway` | Valida assinatura HMAC do GitHub, descarta entregas repetidas e publica `pr.review.requested` |
 | `diff-fetcher` | Busca, filtra e divide o diff em chunks |
 | `review-agent` | Analisa o diff com o LLM; o tipo de agente vem de `AGENT_TYPE` |
 | `orchestrator` | Estado da review, consolidação, deduplicação e timeout |
@@ -41,6 +41,7 @@ Todos os eventos passam por um topic exchange no RabbitMQ (`pr-sentinel.events`)
 - **Review parcial em vez de falha total.** Se um agente estoura o timeout, o orchestrator publica o que tem e indica qual agente não respondeu.
 - **Saída estruturada.** Os agentes devolvem JSON validado contra um schema, e achados com confiança abaixo de 0.6 são descartados para reduzir falsos positivos.
 - **Comparação HMAC em tempo constante** (`MessageDigest.isEqual`) para evitar timing attacks no webhook.
+- **Idempotência pela chave primária, não por consulta.** O webhook do GitHub é *at least once*, e cada reentrega custaria o diff mais três chamadas de LLM. O `delivery_id` é reservado com `INSERT ... ON CONFLICT DO NOTHING` antes da publicação e na mesma transação: quem decide quem reservou é o banco, e uma falha ao publicar desfaz a reserva para o GitHub reentregar.
 
 ## Rodando localmente
 

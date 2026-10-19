@@ -7,13 +7,35 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Added
+
+- Idempotência do `webhook-gateway` por `X-GitHub-Delivery`: a entrega é reservada no Postgres com
+  `INSERT ... ON CONFLICT DO NOTHING` **antes** de publicar `pr.review.requested`, na mesma
+  transação, então uma reentrega do GitHub não gera review duplicada — nem as três chamadas de LLM
+  que ela custaria ([ADR-005](docs/adr/005-idempotencia-do-webhook-por-delivery-id-no-postgres.md)).
+- Expurgo agendado dos registros de idempotência, com retenção de 30 dias configurável em
+  `gateway.idempotency`. Passada a retenção, uma reentrega manual pelo painel do App volta a gerar
+  review, que é o comportamento desejado.
+- Camadas `domain`, `application` e `infrastructure` no `webhook-gateway`, com as portas
+  `ProcessedDeliveries` e `ReviewRequestPublisher` declaradas pelo caso de uso.
+- Testes de integração com Testcontainers: reserva do mesmo delivery id em paralelo, convivência dos
+  históricos do Flyway em schemas separados, idempotência ponta a ponta pelo HTTP e rollback da
+  reserva quando a publicação falha.
+- Maven Failsafe no build — sem ele os testes `*IT` compilavam e nunca rodavam.
+
 ### Changed
 
+- Payload de `pull_request` incompleto passa a responder `400` em vez de publicar. Faltando
+  `installation.id`, owner, repo, número do PR ou `headSha`, o evento publicado quebraria o
+  `diff-fetcher` depois de o sistema já ter pago o diff e as chamadas de LLM.
 - Dependabot passa a ignorar majors do Spring Boot e do Java nas imagens Docker; essas subidas são
   decisão de projeto, com ADR, e não bump automático.
 
 ### Fixed
 
+- Corpo de webhook que não era JSON válido respondia `500`, e o GitHub reentregava indefinidamente
+  um corpo que nunca ia parsear. Agora responde `400`, e a mensagem registrada em log é de produção
+  própria: a do Jackson carrega um trecho do corpo cru, que não pode ir para log.
 - `mvnw` e os hooks em `.claude/hooks/` estavam versionados sem bit de execução, o que fazia o CI
   falhar com `Permission denied` no Linux.
 
