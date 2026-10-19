@@ -41,6 +41,8 @@ Todos os eventos passam por um topic exchange no RabbitMQ (`pr-sentinel.events`)
 - **Review parcial em vez de falha total.** Se um agente estoura o timeout, o orchestrator publica o que tem e indica qual agente não respondeu.
 - **Saída estruturada.** Os agentes devolvem JSON validado contra um schema, e achados com confiança abaixo de 0.6 são descartados para reduzir falsos positivos.
 - **Comparação HMAC em tempo constante** (`MessageDigest.isEqual`) para evitar timing attacks no webhook.
+- **Diff fatiado em fronteira de hunk.** Cada chunk publicado custa três chamadas de LLM, uma por agente. O `diff-fetcher` descarta lockfile, arquivo gerado e binário antes de fatiar, e quebra os patches grandes respeitando o cabeçalho `@@` — é ele que diz a que linhas do arquivo o trecho corresponde, e sem ele o achado do agente aponta para a linha errada.
+- **Token do App cacheado por instalação.** O installation token vale 1 hora e é renovado 5 minutos antes de vencer. Sem cache, cada PR pagaria duas chamadas de autenticação antes de começar a trabalhar.
 - **Idempotência pela chave primária, não por consulta.** O webhook do GitHub é *at least once*, e cada reentrega custaria o diff mais três chamadas de LLM. O `delivery_id` é reservado com `INSERT ... ON CONFLICT DO NOTHING` antes da publicação e na mesma transação: quem decide quem reservou é o banco, e uma falha ao publicar desfaz a reserva para o GitHub reentregar.
 
 ## Rodando localmente
@@ -65,7 +67,15 @@ Para receber webhooks reais em localhost, use [smee.io](https://smee.io) ou ngro
 3. Webhook secret: o mesmo valor de `GITHUB_WEBHOOK_SECRET`
 4. Permissões: **Pull requests** (read & write), **Contents** (read)
 5. Eventos: **Pull request**
-6. Gere a private key e salve em `secrets/github-app.pem`
+6. Gere a private key e **converta para PKCS#8** — o GitHub entrega em PKCS#1, que o Java não lê
+   ([ADR-006](docs/adr/006-token-de-instalacao-do-github-app-com-cache-em-memoria.md)):
+
+   ```bash
+   openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt \
+     -in ~/Downloads/seu-app.private-key.pem -out secrets/github-app.pem
+   ```
+
+   Se o arquivo ficar no formato original, o `diff-fetcher` não sobe e diz exatamente este comando.
 7. Instale o App no repositório de teste
 
 ## Testes
