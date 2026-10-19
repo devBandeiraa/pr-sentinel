@@ -13,7 +13,7 @@
 
     <groupId>dev.bandeira</groupId>
     <artifactId>pr-sentinel</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>PR Sentinel</name>
     <description>Revisor de código multi-agente para Pull Requests do GitHub</description>

@@ -7,12 +7,16 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-19
+
+Fase 6 — a review chega ao Pull Request, e o fluxo passa a rodar ponta a ponta: webhook, diff, três
+agentes, consolidação e comentário no PR.
+
 ### Added
 
 - `github-publisher` funcional: consome `pr.review.ready` e posta a review no Pull Request, com
   resumo em Markdown e um comentário inline por achado, posicionado no arquivo e na linha
-  ([ADR-009](docs/adr/009-review-publicada-como-comment-com-marcador-de-idempotencia.md)). **Com
-  isso o fluxo roda ponta a ponta**: webhook, diff, três agentes, consolidação e review no PR.
+  ([ADR-009](docs/adr/009-review-publicada-como-comment-com-marcador-de-idempotencia.md)).
 - A review é postada como `COMMENT` por padrão, então o bot nunca bloqueia merge.
   `PUBLISHER_REQUEST_CHANGES=true` liga o modo duro, em que veredito `CHANGES_REQUESTED` vira
   `REQUEST_CHANGES` e bloqueia o merge sob branch protection. `APPROVE` não é usado em nenhuma
@@ -25,6 +29,13 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
   review menos navegável é melhor que nenhuma.
 - A review diz o que não foi analisado: review parcial lista os agentes que não responderam, e o
   rodapé avisa que os achados vêm de LLM e podem conter falso positivo.
+
+## [0.5.0] - 2026-10-19
+
+Fase 5 — o estado da review e a consolidação dos três agentes.
+
+### Added
+
 - `orchestrator` funcional: registra a review em `PENDING`, grava o resultado de cada agente,
   consolida quando o último responde e publica `pr.review.ready`. Os achados são deduplicados por
   arquivo e linha, mantendo o mais severo, e o veredito sai da severidade máxima
@@ -39,11 +50,30 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
   comentários no mesmo PR. Tem teste de integração com duas threads.
 - Agentes de performance e padrões cobertos por teste: o nome da fila, o prompt e o foco são
   derivados de `AGENT_TYPE` para os três tipos, e um tipo novo no enum sem prompt correspondente
-  reprova o build em vez de derrubar o container no deploy ([ADR-002](docs/adr/002-review-agent-como-tres-containers.md)).
+  reprova o build em vez de derrubar o container no deploy
+  ([ADR-002](docs/adr/002-review-agent-como-tres-containers.md)).
+
+### Changed
+
+- A tabela `review` ganhou `installation_id` (migration `V2`). Sem ela não dava para reconstruir o
+  `PullRequestRef` que vai no `pr.review.ready`, e o `github-publisher` não teria como trocar o id
+  pelo token do GitHub App.
+- `orchestrator` passa a usar JDBC em vez de JPA. As três operações que sustentam a correção do
+  serviço são SQL que o JPA não expressa — dois `INSERT ... ON CONFLICT DO NOTHING` e um `UPDATE`
+  condicional por status. Com JPA cada uma viraria exceção de constraint usada como fluxo de
+  controle dentro de uma transação já marcada para rollback. É o mesmo raciocínio que o
+  `webhook-gateway` já aplicava.
+
+## [0.4.0] - 2026-10-19
+
+Fase 4 — o agente de segurança analisando diff de verdade.
+
+### Added
+
 - Agente de segurança ponta a ponta: o `review-agent` consome `pr.diff.ready`, analisa cada chunk
-  com o LLM usando o prompt do seu `AGENT_TYPE`, filtra os achados e publica
-  `pr.agent.completed`. Falha em qualquer chunk publica `FAILED` em vez de morrer calado — é isso
-  que permite ao `orchestrator` fechar uma review parcial
+  com o LLM usando o prompt do seu `AGENT_TYPE`, filtra os achados e publica `pr.agent.completed`.
+  Falha em qualquer chunk publica `FAILED` em vez de morrer calado — é isso que permite ao
+  `orchestrator` fechar uma review parcial
   ([ADR-003](docs/adr/003-review-parcial-em-timeout-de-agente.md)).
 - Uma segunda tentativa quando a resposta do modelo não vira o JSON esperado, agora dizendo a ele o
   que errou. Resposta fora de formato é o erro mais comum de LLM e é mais barato pedir de novo que
@@ -54,19 +84,46 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
   `[0,1]` é descartado. A saída do modelo é entrada não confiável, como o payload do webhook.
 - `review-agent` reorganizado nas camadas `domain`, `application` e `infrastructure`, com as portas
   `FindingSource` e `AgentResultPublisher` — é o que permite testar o agente sem chamar o LLM.
+
+### Fixed
+
+- **Spring AI preso na linha 1.0.x.** A versão 2.0.1 declarada no POM exige Spring Framework 7, que
+  vem com o Spring Boot 4. Com o Boot 3.5 o `review-agent` compilava e estourava
+  `NoClassDefFoundError` em `org.springframework.core.Nullness` na primeira chamada ao modelo —
+  ninguém tinha notado porque nenhum teste exercitava esse caminho antes desta fase. Subir junto com
+  o Boot 4 é decisão de projeto, com ADR.
+- `errorMessage` do `AgentCompletedEvent` passa a carregar só o tipo da exceção, nunca a mensagem
+  dela: o campo é gravado pelo `orchestrator` e pode chegar ao PR, e a mensagem de um cliente de LLM
+  costuma trazer de volta o corpo da requisição — que é o código do pull request. O detalhe completo
+  fica no log do agente.
+
+## [0.3.0] - 2026-10-19
+
+Fase 3 — o diff do PR chegando aos agentes.
+
+### Added
+
 - `diff-fetcher` funcional: consome `pr.review.requested`, busca os arquivos do PR na API do GitHub
   paginando pelo header `Link`, descarta o que não vale review (lockfile, gerado, minificado,
   binário e arquivo removido), fatia os patches em fronteira de hunk e publica `pr.diff.ready`
   ([ADR-007](docs/adr/007-diff-por-arquivo-da-api-do-github-fatiado-em-chunks.md)).
 - Autenticação como GitHub App: JWT `RS256` assinado com a chave privada do App e installation
   token cacheado por instalação, renovado 5 minutos antes de vencer
-  ([ADR-006](docs/adr/006-token-de-instalacao-do-github-app-com-cache-em-memoria.md)).
+  ([ADR-006](docs/adr/006-token-de-instalacao-do-github-app-com-cache-em-memoria.md)). A chave
+  precisa estar em PKCS#8 — o passo de conversão está no README.
 - PR sem arquivo revisável publica `pr.diff.ready` com a lista de chunks vazia, em vez de não
   publicar: a review termina aprovada e barata, em vez de ficar pendurada até o timeout do
   `orchestrator`.
 - O `diff-fetcher` distingue erro que vale retentar de erro que não vale: rate limit e `5xx` voltam
   para o retry da fila; PR apagado, App sem permissão e credencial inválida vão direto para a DLQ,
   em vez de insistir três vezes num erro que não muda.
+
+## [0.2.0] - 2026-10-19
+
+Fase 2 — o webhook deixa de gerar review duplicada.
+
+### Added
+
 - Idempotência do `webhook-gateway` por `X-GitHub-Delivery`: a entrega é reservada no Postgres com
   `INSERT ... ON CONFLICT DO NOTHING` **antes** de publicar `pr.review.requested`, na mesma
   transação, então uma reentrega do GitHub não gera review duplicada — nem as três chamadas de LLM
@@ -83,14 +140,6 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Changed
 
-- A tabela `review` ganhou `installation_id` (migration `V2`). Sem ela não dava para reconstruir o
-  `PullRequestRef` que vai no `pr.review.ready`, e o `github-publisher` da fase 6 não teria como
-  trocar o id pelo token do GitHub App.
-- `orchestrator` passa a usar JDBC em vez de JPA. As três operações que sustentam a correção do
-  serviço são SQL que o JPA não expressa — dois `INSERT ... ON CONFLICT DO NOTHING` e um `UPDATE`
-  condicional por status. Com JPA cada uma viraria exceção de constraint usada como fluxo de
-  controle dentro de uma transação já marcada para rollback. É o mesmo raciocínio que o
-  `webhook-gateway` já aplicava.
 - Payload de `pull_request` incompleto passa a responder `400` em vez de publicar. Faltando
   `installation.id`, owner, repo, número do PR ou `headSha`, o evento publicado quebraria o
   `diff-fetcher` depois de o sistema já ter pago o diff e as chamadas de LLM.
@@ -99,15 +148,6 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Fixed
 
-- **Spring AI preso na linha 1.0.x.** A versão 2.0.1 declarada no POM exige Spring Framework 7, que
-  vem com o Spring Boot 4. Com o Boot 3.5 o `review-agent` compilava e estourava
-  `NoClassDefFoundError` em `org.springframework.core.Nullness` na primeira chamada ao modelo —
-  ninguém tinha notado porque nenhum teste exercitava esse caminho antes da fase 4. Subir junto com
-  o Boot 4 é decisão de projeto, com ADR.
-- `errorMessage` do `AgentCompletedEvent` passa a carregar só o tipo da exceção, nunca a mensagem
-  dela: o campo é gravado pelo `orchestrator` e pode chegar ao PR, e a mensagem de um cliente de LLM
-  costuma trazer de volta o corpo da requisição — que é o código do pull request. O detalhe completo
-  fica no log do agente.
 - Corpo de webhook que não era JSON válido respondia `500`, e o GitHub reentregava indefinidamente
   um corpo que nunca ia parsear. Agora responde `400`, e a mensagem registrada em log é de produção
   própria: a do Jackson carrega um trecho do corpo cru, que não pode ir para log.

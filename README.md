@@ -2,7 +2,7 @@
 
 Revisor de código multi-agente para Pull Requests do GitHub. Quando um PR é aberto ou atualizado, três agentes de IA especializados (segurança, performance e padrões) analisam o diff em paralelo, um orquestrador consolida os resultados e a review é publicada direto no PR.
 
-> 🚧 Em construção. Veja o [roadmap](#roadmap).
+> 🚧 Em construção, com o fluxo já completo de ponta a ponta. Veja o [roadmap](#roadmap).
 
 ## Arquitetura
 
@@ -95,11 +95,11 @@ mvn verify
 ## Roadmap
 
 - [x] Fase 1 — Estrutura de módulos, contratos de eventos, modelo de dados
-- [ ] Fase 2 — webhook-gateway com idempotência
-- [ ] Fase 3 — diff-fetcher + autenticação do GitHub App
-- [ ] Fase 4 — agente de segurança ponta a ponta, com testes
-- [ ] Fase 5 — agentes de performance e padrões + orchestrator
-- [ ] Fase 6 — github-publisher e review real num repositório de teste
+- [x] Fase 2 — webhook-gateway com idempotência
+- [x] Fase 3 — diff-fetcher + autenticação do GitHub App
+- [x] Fase 4 — agente de segurança ponta a ponta, com testes
+- [x] Fase 5 — agentes de performance e padrões + orchestrator
+- [x] Fase 6 — github-publisher (a review real num repositório de teste depende do GitHub App instalado)
 - [ ] Fase 7 — observabilidade (Micrometer), evals, métricas de custo
 
 ## Stack
