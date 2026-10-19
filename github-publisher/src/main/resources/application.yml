@@ -20,7 +20,15 @@ spring:
 
 github:
   app-id: ${GITHUB_APP_ID}
+  # Chave em PKCS#8, montada como secret do Docker — ver README e ADR-006.
   private-key-path: ${GITHUB_APP_PRIVATE_KEY_PATH:/run/secrets/github-app.pem}
+  api-base-url: ${GITHUB_API_BASE_URL:https://api.github.com}
+
+publisher:
+  # Ligado, veredito CHANGES_REQUESTED posta REQUEST_CHANGES e bloqueia o merge em
+  # repositório com branch protection — e aí um falso positivo do LLM trava o time até
+  # alguém dar dismiss na review do bot. Desligado por padrão (ADR-009).
+  request-changes: ${PUBLISHER_REQUEST_CHANGES:false}
 
 management:
   endpoints:
