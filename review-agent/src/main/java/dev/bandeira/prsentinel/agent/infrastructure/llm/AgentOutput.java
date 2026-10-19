@@ -1,4 +1,4 @@
-package dev.bandeira.prsentinel.agent;
+package dev.bandeira.prsentinel.agent.infrastructure.llm;
 
 import dev.bandeira.prsentinel.common.event.Finding;
 import java.util.List;

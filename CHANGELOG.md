@@ -9,6 +9,20 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Added
 
+- Agente de segurança ponta a ponta: o `review-agent` consome `pr.diff.ready`, analisa cada chunk
+  com o LLM usando o prompt do seu `AGENT_TYPE`, filtra os achados e publica
+  `pr.agent.completed`. Falha em qualquer chunk publica `FAILED` em vez de morrer calado — é isso
+  que permite ao `orchestrator` fechar uma review parcial
+  ([ADR-003](docs/adr/003-review-parcial-em-timeout-de-agente.md)).
+- Uma segunda tentativa quando a resposta do modelo não vira o JSON esperado, agora dizendo a ele o
+  que errou. Resposta fora de formato é o erro mais comum de LLM e é mais barato pedir de novo que
+  reprovar o agente e perder a review.
+- Validação de forma dos achados, além do limiar de confiança da
+  [ADR-004](docs/adr/004-saida-estruturada-do-llm-com-limiar-de-confianca.md): achado sem arquivo,
+  sem severidade, sem título, sem explicação, com linha menor que 1 ou com confiança fora de
+  `[0,1]` é descartado. A saída do modelo é entrada não confiável, como o payload do webhook.
+- `review-agent` reorganizado nas camadas `domain`, `application` e `infrastructure`, com as portas
+  `FindingSource` e `AgentResultPublisher` — é o que permite testar o agente sem chamar o LLM.
 - `diff-fetcher` funcional: consome `pr.review.requested`, busca os arquivos do PR na API do GitHub
   paginando pelo header `Link`, descarta o que não vale review (lockfile, gerado, minificado,
   binário e arquivo removido), fatia os patches em fronteira de hunk e publica `pr.diff.ready`
@@ -46,6 +60,15 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Fixed
 
+- **Spring AI preso na linha 1.0.x.** A versão 2.0.1 declarada no POM exige Spring Framework 7, que
+  vem com o Spring Boot 4. Com o Boot 3.5 o `review-agent` compilava e estourava
+  `NoClassDefFoundError` em `org.springframework.core.Nullness` na primeira chamada ao modelo —
+  ninguém tinha notado porque nenhum teste exercitava esse caminho antes da fase 4. Subir junto com
+  o Boot 4 é decisão de projeto, com ADR.
+- `errorMessage` do `AgentCompletedEvent` passa a carregar só o tipo da exceção, nunca a mensagem
+  dela: o campo é gravado pelo `orchestrator` e pode chegar ao PR, e a mensagem de um cliente de LLM
+  costuma trazer de volta o corpo da requisição — que é o código do pull request. O detalhe completo
+  fica no log do agente.
 - Corpo de webhook que não era JSON válido respondia `500`, e o GitHub reentregava indefinidamente
   um corpo que nunca ia parsear. Agora responde `400`, e a mensagem registrada em log é de produção
   própria: a do Jackson carrega um trecho do corpo cru, que não pode ir para log.
