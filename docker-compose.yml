@@ -125,6 +125,8 @@ services:
       <<: *rabbit-env
       GITHUB_APP_ID: ${GITHUB_APP_ID}
       GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github-app.pem
+      # true faz o bot bloquear merge quando pede mudanças — ver README e ADR-009.
+      PUBLISHER_REQUEST_CHANGES: ${PUBLISHER_REQUEST_CHANGES:-false}
     secrets:
       - github-app.pem
     depends_on:

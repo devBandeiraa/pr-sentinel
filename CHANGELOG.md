@@ -9,6 +9,22 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Added
 
+- `github-publisher` funcional: consome `pr.review.ready` e posta a review no Pull Request, com
+  resumo em Markdown e um comentário inline por achado, posicionado no arquivo e na linha
+  ([ADR-009](docs/adr/009-review-publicada-como-comment-com-marcador-de-idempotencia.md)). **Com
+  isso o fluxo roda ponta a ponta**: webhook, diff, três agentes, consolidação e review no PR.
+- A review é postada como `COMMENT` por padrão, então o bot nunca bloqueia merge.
+  `PUBLISHER_REQUEST_CHANGES=true` liga o modo duro, em que veredito `CHANGES_REQUESTED` vira
+  `REQUEST_CHANGES` e bloqueia o merge sob branch protection. `APPROVE` não é usado em nenhuma
+  configuração: bot que aprova dá a impressão de revisão humana feita.
+- Idempotência da publicação por marcador invisível no corpo da review. Antes de postar, o serviço
+  procura o marcador desta análise entre as reviews que já estão no PR — fecha o último buraco de
+  comentário duplicado da cadeia, sem banco e sem infraestrutura nova.
+- Comentário inline recusado pelo GitHub (achado com linha fora do diff faz a requisição inteira
+  falhar com `422`) cai para uma review só com o resumo, agora com os achados listados no corpo. Uma
+  review menos navegável é melhor que nenhuma.
+- A review diz o que não foi analisado: review parcial lista os agentes que não responderam, e o
+  rodapé avisa que os achados vêm de LLM e podem conter falso positivo.
 - `orchestrator` funcional: registra a review em `PENDING`, grava o resultado de cada agente,
   consolida quando o último responde e publica `pr.review.ready`. Os achados são deduplicados por
   arquivo e linha, mantendo o mais severo, e o veredito sai da severidade máxima

@@ -62,6 +62,12 @@ docker compose up --build
 
 Para receber webhooks reais em localhost, use [smee.io](https://smee.io) ou ngrok apontando para a porta 8080.
 
+### O bot bloqueia merge?
+
+Não, por padrão. A review é postada como `COMMENT`, mesmo quando o veredito é `CHANGES_REQUESTED` — o veredito aparece no corpo, e o merge segue liberado.
+
+Para o modo duro, ligue `PUBLISHER_REQUEST_CHANGES=true` no `.env`. Aí veredito `CHANGES_REQUESTED` vira uma review `REQUEST_CHANGES`, que **bloqueia o merge** em repositório com branch protection até alguém com permissão dar dismiss. Pense duas vezes: os achados vêm de LLM com limiar de confiança de 0.6, então um falso positivo trava o time. O raciocínio completo está na [ADR-009](docs/adr/009-review-publicada-como-comment-com-marcador-de-idempotencia.md).
+
 ### Criando o GitHub App
 
 1. GitHub → Settings → Developer settings → GitHub Apps → New GitHub App
