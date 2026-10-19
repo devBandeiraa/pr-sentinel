@@ -9,6 +9,21 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Added
 
+- `orchestrator` funcional: registra a review em `PENDING`, grava o resultado de cada agente,
+  consolida quando o último responde e publica `pr.review.ready`. Os achados são deduplicados por
+  arquivo e linha, mantendo o mais severo, e o veredito sai da severidade máxima
+  ([ADR-008](docs/adr/008-consolidacao-por-arquivo-e-linha-com-veredito-por-severidade.md)).
+- Timeout por review, com varredura agendada: a review vencida é publicada com o que os agentes
+  produziram, marcada como parcial e com a lista de quem não respondeu
+  ([ADR-003](docs/adr/003-review-parcial-em-timeout-de-agente.md)). Review que não recebeu nenhuma
+  resposta termina em `FAILED` e ainda assim é publicada — ninguém fica esperando retorno que não
+  vem.
+- Publicação exatamente uma vez por review, garantida por `UPDATE` condicional ao status: o terceiro
+  resultado de agente e a varredura de timeout podem disputar a mesma review sem gerar dois
+  comentários no mesmo PR. Tem teste de integração com duas threads.
+- Agentes de performance e padrões cobertos por teste: o nome da fila, o prompt e o foco são
+  derivados de `AGENT_TYPE` para os três tipos, e um tipo novo no enum sem prompt correspondente
+  reprova o build em vez de derrubar o container no deploy ([ADR-002](docs/adr/002-review-agent-como-tres-containers.md)).
 - Agente de segurança ponta a ponta: o `review-agent` consome `pr.diff.ready`, analisa cada chunk
   com o LLM usando o prompt do seu `AGENT_TYPE`, filtra os achados e publica
   `pr.agent.completed`. Falha em qualquer chunk publica `FAILED` em vez de morrer calado — é isso
@@ -52,6 +67,14 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Changed
 
+- A tabela `review` ganhou `installation_id` (migration `V2`). Sem ela não dava para reconstruir o
+  `PullRequestRef` que vai no `pr.review.ready`, e o `github-publisher` da fase 6 não teria como
+  trocar o id pelo token do GitHub App.
+- `orchestrator` passa a usar JDBC em vez de JPA. As três operações que sustentam a correção do
+  serviço são SQL que o JPA não expressa — dois `INSERT ... ON CONFLICT DO NOTHING` e um `UPDATE`
+  condicional por status. Com JPA cada uma viraria exceção de constraint usada como fluxo de
+  controle dentro de uma transação já marcada para rollback. É o mesmo raciocínio que o
+  `webhook-gateway` já aplicava.
 - Payload de `pull_request` incompleto passa a responder `400` em vez de publicar. Faltando
   `installation.id`, owner, repo, número do PR ou `headSha`, o evento publicado quebraria o
   `diff-fetcher` depois de o sistema já ter pago o diff e as chamadas de LLM.

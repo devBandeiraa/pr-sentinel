@@ -16,12 +16,15 @@ spring:
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:5432/${POSTGRES_DB:prsentinel}
     username: ${POSTGRES_USER:prsentinel}
     password: ${POSTGRES_PASSWORD:prsentinel}
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    open-in-view: false
+    hikari:
+      # Consultas curtas em resposta a mensagem, mais uma thread de varredura.
+      maximum-pool-size: 10
+  # Sem bloco spring.flyway: o histórico deste serviço fica no schema public, e é o do
+  # gateway que foi movido para um schema próprio (ADR-005).
 
 orchestrator:
+  # Prazos da ADR-003. Na prática a review parcial sai entre agent-timeout e
+  # agent-timeout + timeout-check-interval depois do pedido.
   agent-timeout: 5m
   timeout-check-interval: 30s
 

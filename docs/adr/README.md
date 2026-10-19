@@ -13,5 +13,6 @@ supersede a anterior.
 | [005](005-idempotencia-do-webhook-por-delivery-id-no-postgres.md) | Idempotência do webhook por delivery id em tabela no Postgres | Aceita |
 | [006](006-token-de-instalacao-do-github-app-com-cache-em-memoria.md) | Token de instalação do GitHub App obtido sob demanda e cacheado em memória | Aceita |
 | [007](007-diff-por-arquivo-da-api-do-github-fatiado-em-chunks.md) | Diff obtido arquivo por arquivo pela API do GitHub e fatiado em fronteira de hunk | Aceita |
+| [008](008-consolidacao-por-arquivo-e-linha-com-veredito-por-severidade.md) | Consolidação deduplica por arquivo e linha, e o veredito sai da severidade máxima | Aceita |
 
 Para criar a próxima, use a skill `write-adr`.
