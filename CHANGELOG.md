@@ -9,6 +9,19 @@ e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
 ### Added
 
+- `diff-fetcher` funcional: consome `pr.review.requested`, busca os arquivos do PR na API do GitHub
+  paginando pelo header `Link`, descarta o que não vale review (lockfile, gerado, minificado,
+  binário e arquivo removido), fatia os patches em fronteira de hunk e publica `pr.diff.ready`
+  ([ADR-007](docs/adr/007-diff-por-arquivo-da-api-do-github-fatiado-em-chunks.md)).
+- Autenticação como GitHub App: JWT `RS256` assinado com a chave privada do App e installation
+  token cacheado por instalação, renovado 5 minutos antes de vencer
+  ([ADR-006](docs/adr/006-token-de-instalacao-do-github-app-com-cache-em-memoria.md)).
+- PR sem arquivo revisável publica `pr.diff.ready` com a lista de chunks vazia, em vez de não
+  publicar: a review termina aprovada e barata, em vez de ficar pendurada até o timeout do
+  `orchestrator`.
+- O `diff-fetcher` distingue erro que vale retentar de erro que não vale: rate limit e `5xx` voltam
+  para o retry da fila; PR apagado, App sem permissão e credencial inválida vão direto para a DLQ,
+  em vez de insistir três vezes num erro que não muda.
 - Idempotência do `webhook-gateway` por `X-GitHub-Delivery`: a entrega é reservada no Postgres com
   `INSERT ... ON CONFLICT DO NOTHING` **antes** de publicar `pr.review.requested`, na mesma
   transação, então uma reentrega do GitHub não gera review duplicada — nem as três chamadas de LLM
