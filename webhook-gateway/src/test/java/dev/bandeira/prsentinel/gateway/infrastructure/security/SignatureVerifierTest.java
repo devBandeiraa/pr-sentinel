@@ -1,7 +1,8 @@
-package dev.bandeira.prsentinel.gateway;
+package dev.bandeira.prsentinel.gateway.infrastructure.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.bandeira.prsentinel.gateway.infrastructure.config.WebhookProperties;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
